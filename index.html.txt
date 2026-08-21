@@ -1,0 +1,949 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ExamForge Engine V14.0 (Supabase Connected)</title>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23FBBF24'%3E%3Cpath d='M13 2L3 14h9l-1 8 10-12h-9l1-8z'/%3E%3C/svg%3E">
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Supabase JS Client Library -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        @media print {
+            body { background: white !important; color: black !important; }
+            .no-print { display: none !important; }
+            .print-page { display: block !important; padding: 0 !important; box-shadow: none !important; max-width: none !important; margin-bottom: 0 !important; }
+            .page-break { page-break-before: always; break-before: always; }
+            .break-inside-avoid { page-break-inside: avoid; break-inside: avoid; }
+        }
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #0f172a; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen font-sans flex flex-col">
+
+    <!-- Authentication Overlay Screen -->
+    <div id="auth-overlay" class="fixed inset-0 z-50 bg-slate-950/95 backdrop-blur-md flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-8 max-w-md w-full shadow-2xl space-y-6">
+            <div class="text-center">
+                <div class="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-cyan-950/60 border border-cyan-800/80 text-cyan-400 mb-3 text-2xl">
+                    ⚡
+                </div>
+                <h2 class="text-xl font-bold text-slate-100 tracking-wide">ExamForge Cloud Login</h2>
+                <p class="text-xs text-slate-400 mt-1">Enter your username & password to access your cloud question bank.</p>
+            </div>
+
+            <form onsubmit="handleAuthSubmit(event)" class="space-y-4">
+                <div>
+                    <label class="block text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1">Username / Name</label>
+                    <input type="text" id="auth-username" required placeholder="e.g. John Doe or teacher1" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-slate-100 focus:outline-none focus:border-cyan-500 transition-colors">
+                </div>
+                <div>
+                    <label class="block text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1">Password</label>
+                    <input type="password" id="auth-password" required placeholder="••••••••" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-slate-100 focus:outline-none focus:border-cyan-500 transition-colors">
+                </div>
+
+                <div class="flex gap-3 pt-2">
+                    <button type="submit" onclick="authMode='signin'" class="flex-1 bg-cyan-600 hover:bg-cyan-500 text-white font-bold py-2.5 px-4 rounded-lg text-xs uppercase tracking-wider transition-all shadow-md">
+                        Sign In
+                    </button>
+                    <button type="submit" onclick="authMode='signup'" class="flex-1 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-bold py-2.5 px-4 rounded-lg text-xs uppercase tracking-wider transition-all">
+                        Register
+                    </button>
+                </div>
+            </form>
+
+            <div class="border-t border-slate-800 pt-4 text-center space-y-2">
+                <button onclick="useLocalDemoMode()" class="w-full text-xs bg-slate-950 hover:bg-slate-800 text-slate-400 hover:text-slate-200 border border-slate-800 py-2.5 rounded-lg transition-colors font-medium">
+                    🚀 Continue Offline (Local Demo Mode)
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Header Navigation -->
+    <header class="bg-slate-900/80 border-b border-slate-800 p-4 sticky top-0 z-40 no-print backdrop-blur shadow-lg flex-shrink-0">
+        <div class="w-full mx-auto flex flex-col md:flex-row justify-between items-center px-6 gap-4">
+            <div class="flex items-center space-x-3">
+                <div class="h-2.5 w-2.5 bg-cyan-500 rounded-full shadow-[0_0_8px_#06b6d4]"></div>
+                <h1 class="text-sm font-bold tracking-widest text-slate-200 uppercase">ExamForge v14.0</h1>
+                <span id="user-badge" class="hidden text-[10px] bg-cyan-950/80 text-cyan-400 border border-cyan-800 px-2 py-0.5 rounded-full font-mono"></span>
+            </div>
+            
+            <div class="flex flex-wrap items-center gap-2 bg-slate-950/60 p-1.5 px-3 rounded-xl border border-slate-800/80">
+                <div class="text-[10px] font-bold tracking-widest uppercase text-slate-500 mr-1">DB Breakdown:</div>
+                <div class="text-[11px] font-medium bg-slate-900 border border-slate-800 px-2 py-0.5 rounded">Lvl 1: <span id="lbl-count-1" class="text-emerald-400 font-bold">0</span></div>
+                <div class="text-[11px] font-medium bg-slate-900 border border-slate-800 px-2 py-0.5 rounded">Lvl 2: <span id="lbl-count-2" class="text-blue-400 font-bold">0</span></div>
+                <div class="text-[11px] font-medium bg-slate-900 border border-slate-800 px-2 py-0.5 rounded">Lvl 3: <span id="lbl-count-3" class="text-yellow-400 font-bold">0</span></div>
+                <div class="text-[11px] font-medium bg-slate-900 border border-slate-800 px-2 py-0.5 rounded">Lvl 4: <span id="lbl-count-4" class="text-orange-400 font-bold">0</span></div>
+                <div class="text-[11px] font-medium bg-slate-900 border border-slate-800 px-2 py-0.5 rounded">Lvl 5: <span id="lbl-count-5" class="text-rose-400 font-bold">0</span></div>
+            </div>
+
+            <div class="flex items-center space-x-3">
+                <button id="btn-manage" onclick="switchView('manage')" class="bg-slate-800 text-cyan-400 border border-slate-700 px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-all shadow-sm">
+                    Database Count (<span id="db-count">0</span>)
+                </button>
+                <button id="btn-gen" onclick="generateExam()" class="bg-cyan-600 hover:bg-cyan-500 text-white px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-all shadow-md shadow-cyan-900/20">
+                    ⚡ Generate Exam Sheet
+                </button>
+                <button onclick="handleSignOut()" class="bg-red-950 hover:bg-red-900 text-red-200 px-3 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-all border border-red-800/80 shadow-sm">
+                    Logout
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content Area -->
+    <main class="w-full mx-auto p-6 px-6 print:p-0 flex-1 flex flex-col justify-stretch">
+
+        <!-- Question Management Dashboard -->
+        <div id="view-manage" class="grid grid-cols-1 lg:grid-cols-12 gap-6 no-print flex-1 items-start">
+            
+            <!-- Question Form Column -->
+            <div class="lg:col-span-5 bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-xl h-fit sticky top-24">
+                <h2 id="form-title" class="text-xs font-bold uppercase tracking-wider text-slate-300 border-b border-slate-800 pb-3 mb-4 flex justify-between items-center">
+                    <span>Add New Question</span>
+                    <button id="btn-cancel-edit" onclick="cancelEdit()" class="hidden text-rose-400 hover:underline lowercase font-normal">cancel edit</button>
+                </h2>
+                
+                <form id="question-form" onsubmit="handleFormSubmit(event)" class="space-y-4">
+                    <input type="hidden" id="edit-id">
+                    
+                    <div class="grid grid-cols-12 gap-3">
+                        <div class="col-span-8">
+                            <label class="block text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1">Difficulty Level</label>
+                            <select id="qLevel" required class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-slate-100 focus:outline-none focus:border-cyan-500 transition-colors">
+                                <option value="1">Level 1</option>
+                                <option value="2">Level 2</option>
+                                <option value="3" selected>Level 3</option>
+                                <option value="4">Level 4</option>
+                                <option value="5">Level 5</option>
+                            </select>
+                        </div>
+                        <div class="col-span-4">
+                            <label class="block text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1 text-cyan-400">Correct Choice</label>
+                            <select id="qCorrect" required class="w-full bg-slate-950 border border-cyan-900/50 rounded-lg p-2.5 text-xs text-cyan-400 font-bold focus:outline-none focus:border-cyan-400 transition-colors">
+                                <option value="a">Option A</option>
+                                <option value="b">Option B</option>
+                                <option value="c">Option C</option>
+                                <option value="d">Option D</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center space-x-2.5 bg-slate-950/60 p-2.5 rounded-lg border border-slate-800/80">
+                        <input type="checkbox" id="qLockOptions" class="w-4 h-4 rounded border-slate-700 bg-slate-950 text-cyan-500 focus:ring-cyan-500 accent-cyan-500 cursor-pointer">
+                        <label for="qLockOptions" class="text-xs text-slate-300 font-medium cursor-pointer select-none">🔒 Lock Option Order (Do not randomize options A-D)</label>
+                    </div>
+
+                    <div>
+                        <label class="block text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1">Question Text (English)</label>
+                        <textarea id="qEng" required class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-slate-100 focus:outline-none focus:border-cyan-500 h-16 resize-none transition-colors" placeholder="Type English question here..."></textarea>
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1">Question Text (Français)</label>
+                        <textarea id="qFre" required class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-slate-100 focus:outline-none focus:border-cyan-500 h-16 resize-none transition-colors" placeholder="Tapez la question en Français ici..."></textarea>
+                    </div>
+
+                    <div id="options-inputs" class="space-y-3"></div>
+
+                    <button type="submit" id="btn-submit" class="w-full bg-cyan-600 hover:bg-cyan-500 text-white font-bold py-2.5 px-4 rounded-lg text-xs uppercase tracking-wider border border-cyan-500 shadow-md transition-all">
+                        Commit to Cloud Database
+                    </button>
+                </form>
+            </div>
+
+            <!-- Question Repository View -->
+            <div class="lg:col-span-7 flex flex-col space-y-4 self-stretch">
+                <div class="bg-slate-900 border border-slate-800 p-5 rounded-xl shadow-md flex-shrink-0 space-y-3">
+                    <div class="flex items-center justify-between border-b border-slate-800/80 pb-2">
+                        <label class="block text-[10px] font-bold uppercase tracking-widest text-slate-400">Exam Label / Header Version</label>
+                        <input type="text" id="exam-version" value="Version A" class="w-44 bg-slate-950 border border-slate-800 rounded-lg p-1.5 text-xs text-slate-100 text-center focus:outline-none focus:border-cyan-500 transition-colors">
+                    </div>
+                    
+                    <div class="pt-1">
+                        <span class="block text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-2">Generation Targets (By Difficulty Level)</span>
+                        <div class="grid grid-cols-5 gap-2 text-center">
+                            <div class="bg-slate-950 p-2 rounded-lg border border-slate-800/80">
+                                <div class="text-[9px] font-bold text-slate-400 mb-1">Level 1</div>
+                                <input type="number" id="draw-lvl-1" value="10" min="0" class="w-full bg-slate-900 border border-slate-800 rounded p-1 text-center text-xs text-slate-100 font-bold focus:outline-none focus:border-cyan-500">
+                            </div>
+                            <div class="bg-slate-950 p-2 rounded-lg border border-slate-800/80">
+                                <div class="text-[9px] font-bold text-slate-400 mb-1">Level 2</div>
+                                <input type="number" id="draw-lvl-2" value="20" min="0" class="w-full bg-slate-900 border border-slate-800 rounded p-1 text-center text-xs text-slate-100 font-bold focus:outline-none focus:border-cyan-500">
+                            </div>
+                            <div class="bg-slate-950 p-2 rounded-lg border border-slate-800/80">
+                                <div class="text-[9px] font-bold text-slate-400 mb-1">Level 3</div>
+                                <input type="number" id="draw-lvl-3" value="20" min="0" class="w-full bg-slate-900 border border-slate-800 rounded p-1 text-center text-xs text-slate-100 font-bold focus:outline-none focus:border-cyan-500">
+                            </div>
+                            <div class="bg-slate-950 p-2 rounded-lg border border-slate-800/80">
+                                <div class="text-[9px] font-bold text-slate-400 mb-1">Level 4</div>
+                                <input type="number" id="draw-lvl-4" value="5" min="0" class="w-full bg-slate-900 border border-slate-800 rounded p-1 text-center text-xs text-slate-100 font-bold focus:outline-none focus:border-cyan-500">
+                            </div>
+                            <div class="bg-slate-950 p-2 rounded-lg border border-slate-800/80">
+                                <div class="text-[9px] font-bold text-slate-400 mb-1">Level 5</div>
+                                <input type="number" id="draw-lvl-5" value="5" min="0" class="w-full bg-slate-900 border border-slate-800 rounded p-1 text-center text-xs text-slate-100 font-bold focus:outline-none focus:border-cyan-500">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-xl flex-1 flex flex-col min-h-[500px]">
+                    <div class="flex justify-between items-center mb-4 border-b border-slate-800 pb-2 flex-shrink-0">
+                        <div class="flex items-center space-x-3">
+                            <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400">Questions Database</h3>
+                            <select id="db-level-filter" onchange="updateUI()" class="bg-slate-950 border border-slate-800 rounded px-2 py-0.5 text-[11px] font-medium text-slate-300 focus:outline-none focus:border-cyan-500 transition-colors">
+                                <option value="all">👁️ Show All Levels</option>
+                                <option value="1">🟢 Level 1 Only</option>
+                                <option value="2">🔵 Level 2 Only</option>
+                                <option value="3">🟡 Level 3 Only</option>
+                                <option value="4">🟠 Level 4 Only</option>
+                                <option value="5">🔴 Level 5 Only</option>
+                            </select>
+                        </div>
+                        <div class="flex space-x-3">
+                            <button onclick="clearDatabasePrompt()" class="text-[11px] text-rose-400 hover:text-rose-300 font-medium">🗑️ Clear All</button>
+                            <button onclick="exportBackup()" class="text-[11px] text-slate-400 hover:text-cyan-400 font-medium">🔼 Export JSON</button>
+                            <label class="text-[11px] text-slate-400 hover:text-cyan-400 font-medium cursor-pointer">
+                                🔽 Import JSON <input type="file" id="import-file" onchange="importBackup(event)" class="hidden">
+                            </label>
+                        </div>
+                    </div>
+                    <div id="questions-container" class="space-y-3 max-h-[75vh] overflow-y-auto pr-1 text-xs flex-1"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Printable Exam View -->
+        <div id="view-preview" class="hidden my-4 print:my-0 flex-1">
+            <div class="bg-slate-900 border border-slate-800 p-4 rounded-xl mb-6 flex justify-between items-center no-print shadow-xl">
+                <span class="text-xs text-slate-400">Exam sheet generated successfully with randomized questions.</span>
+                <div class="space-x-2">
+                    <button onclick="switchView('manage')" class="bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-all">← Back to Panel</button>
+                    <button onclick="window.print()" class="bg-emerald-600 hover:bg-emerald-500 text-white px-5 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-all shadow-md shadow-emerald-900/20">🖨️ Print Everything</button>
+                </div>
+            </div>
+
+            <div class="bg-white text-black p-12 shadow-2xl rounded-sm mx-auto max-w-[210mm] min-h-[297mm] print-page mb-8">
+                <div class="border-[3px] border-black p-4 mb-6 relative">
+                    <div id="print-header" class="text-center font-bold text-lg uppercase tracking-wider border-b-2 border-black pb-2 mb-4">
+                        Exam Paper - Version A
+                    </div>
+                    <div class="grid grid-cols-2 text-xs font-bold">
+                        <div>Student Name: <span class="border-b border-dotted border-black inline-block w-52 ml-1 h-4"></span></div>
+                        <div class="text-right">Date: <span class="border-b border-dotted border-black inline-block w-36 ml-1 h-4"></span></div>
+                    </div>
+                </div>
+                <div id="print-questions-target" class="space-y-5"></div>
+            </div>
+
+            <div class="bg-white text-black p-12 shadow-2xl rounded-sm mx-auto max-w-[210mm] min-h-[297mm] print-page page-break">
+                <div id="print-key-target"></div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Notification Toast -->
+    <div id="toast" class="fixed bottom-5 right-5 z-50 transform translate-y-20 opacity-0 transition-all duration-300 pointer-events-none">
+        <div id="toast-body" class="bg-slate-900 border border-slate-700 text-slate-100 text-xs px-4 py-3 rounded-xl shadow-2xl flex items-center space-x-3">
+            <span id="toast-icon">ℹ️</span>
+            <span id="toast-message">Notification message</span>
+        </div>
+    </div>
+
+    <!-- Confirmation Modal -->
+    <div id="confirm-modal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-slate-800 rounded-xl p-6 max-w-md w-full shadow-2xl space-y-4">
+            <h3 id="confirm-title" class="text-sm font-bold uppercase tracking-wider text-slate-200">Confirmation</h3>
+            <p id="confirm-message" class="text-xs text-slate-400 leading-relaxed"></p>
+            <div class="flex justify-end space-x-3 pt-2">
+                <button id="confirm-cancel-btn" class="bg-slate-800 hover:bg-slate-700 text-slate-300 px-4 py-2 rounded-lg text-xs font-bold uppercase">Cancel</button>
+                <button id="confirm-ok-btn" class="bg-rose-600 hover:bg-rose-500 text-white px-4 py-2 rounded-lg text-xs font-bold uppercase">Confirm</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Embed Supabase Credentials directly
+        const SUPABASE_URL = "https://mrwtrgjxhzllsjwihmir.supabase.co";
+        const SUPABASE_ANON_KEY = "sb_publishable_yYnXRZek3zZojDnkbgxSiw_QM15BVuJ";
+
+        let supabaseClient = null;
+        let currentUser = null;
+        let authMode = 'signin';
+        let questions = [];
+        const optionsKeys = ['a', 'b', 'c', 'd'];
+
+        window.addEventListener('DOMContentLoaded', () => {
+            renderOptionInputs();
+            initSupabaseClient();
+        });
+
+        function initSupabaseClient() {
+            if (window.supabase && SUPABASE_URL && SUPABASE_ANON_KEY) {
+                try {
+                    supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+                    checkExistingSession();
+                } catch (err) {
+                    console.error("Failed to initialize Supabase:", err);
+                }
+            }
+        }
+
+        async function checkExistingSession() {
+            if (!supabaseClient) return;
+            const { data: { session } } = await supabaseClient.auth.getSession();
+            if (session && session.user) {
+                currentUser = session.user;
+                onAuthenticated();
+            }
+        }
+
+        function useLocalDemoMode() {
+            currentUser = { id: 'local-demo-user', email: 'demoteacher@examforge.app' };
+            onAuthenticated();
+            showToast('Started in Local Offline Mode!', 'info');
+        }
+
+        async function handleAuthSubmit(e) {
+            e.preventDefault();
+
+            const rawUsername = document.getElementById('auth-username').value.trim();
+            const rawPassword = document.getElementById('auth-password').value.trim();
+            
+            // Format username into simulated email address
+            const cleanUsername = rawUsername.toLowerCase().replace(/[^a-z0-9]/g, '');
+            const simulatedEmail = `${cleanUsername || 'user'}@examforge.app`;
+
+            // Ensure password is at least 6 characters for Supabase auth requirement
+            let simulatedPassword = rawPassword;
+            if (simulatedPassword.length < 6) {
+                simulatedPassword = simulatedPassword.padEnd(6, '0');
+            }
+
+            if (!supabaseClient) {
+                currentUser = { id: 'local-demo-user', email: simulatedEmail };
+                onAuthenticated();
+                showToast(`Signed in as "${rawUsername}" (Local Storage Mode)`, 'info');
+                return;
+            }
+
+            if (authMode === 'signup') {
+                const { data, error } = await supabaseClient.auth.signUp({
+                    email: simulatedEmail,
+                    password: simulatedPassword
+                });
+                if (error) {
+                    showToast(error.message, 'error');
+                } else {
+                    showToast('Registration successful! Signing in...', 'success');
+                    if (data.user && !data.session) {
+                        handleSignIn(simulatedEmail, simulatedPassword);
+                    } else if (data.user) {
+                        currentUser = data.user;
+                        onAuthenticated();
+                    }
+                }
+            } else {
+                handleSignIn(simulatedEmail, simulatedPassword);
+            }
+        }
+
+        async function handleSignIn(email, password) {
+            const { data, error } = await supabaseClient.auth.signInWithPassword({
+                email: email,
+                password: password
+            });
+
+            if (error) {
+                showToast(error.message, 'error');
+            } else {
+                currentUser = data.user;
+                onAuthenticated();
+                showToast('Welcome back! Connected to Cloud.', 'success');
+            }
+        }
+
+        function onAuthenticated() {
+            document.getElementById('auth-overlay').classList.add('hidden');
+            const userBadge = document.getElementById('user-badge');
+            userBadge.innerText = currentUser.email.split('@')[0];
+            userBadge.classList.remove('hidden');
+            fetchCloudQuestions();
+        }
+
+        async function handleSignOut() {
+            if (supabaseClient && currentUser && currentUser.id !== 'local-demo-user') {
+                await supabaseClient.auth.signOut();
+            }
+            currentUser = null;
+            questions = [];
+            updateUI();
+            document.getElementById('auth-overlay').classList.remove('hidden');
+            document.getElementById('user-badge').classList.add('hidden');
+            showToast('Signed out successfully.', 'info');
+        }
+
+        async function fetchCloudQuestions() {
+            if (!currentUser) return;
+
+            if (!supabaseClient || currentUser.id === 'local-demo-user') {
+                const localData = localStorage.getItem('examforge_local_questions');
+                questions = localData ? JSON.parse(localData) : [];
+                updateUI();
+                return;
+            }
+
+            const { data, error } = await supabaseClient
+                .from('questions')
+                .select('*')
+                .order('created_at', { ascending: true });
+
+            if (error) {
+                showToast('Failed to load items from cloud: ' + error.message, 'error');
+                return;
+            }
+
+            questions = data.map(q => ({
+                id: q.id,
+                level: q.level,
+                correct: q.correct,
+                lockOptions: q.lock_options,
+                qEng: q.q_eng,
+                qFre: q.q_fre,
+                options: q.options
+            }));
+
+            updateUI();
+        }
+
+        async function handleFormSubmit(e) {
+            e.preventDefault();
+            if (!currentUser) {
+                showToast('Please sign in to save questions.', 'error');
+                return;
+            }
+
+            const editId = document.getElementById('edit-id').value;
+            
+            const payload = {
+                user_id: currentUser.id,
+                level: parseInt(document.getElementById('qLevel').value) || 3,
+                correct: document.getElementById('qCorrect').value || "a",
+                lock_options: document.getElementById('qLockOptions').checked,
+                q_eng: document.getElementById('qEng').value,
+                q_fre: document.getElementById('qFre').value,
+                options: {}
+            };
+
+            optionsKeys.forEach(k => {
+                payload.options[k] = {
+                    eng: document.getElementById(`opt-${k}Eng`).value,
+                    fre: document.getElementById(`opt-${k}Fre`).value
+                };
+            });
+
+            // Local fallback
+            if (!supabaseClient || currentUser.id === 'local-demo-user') {
+                if (editId) {
+                    const idx = questions.findIndex(q => String(q.id) === String(editId));
+                    if (idx !== -1) {
+                        questions[idx] = { id: editId, ...payload, qEng: payload.q_eng, qFre: payload.q_fre, lockOptions: payload.lock_options };
+                    }
+                } else {
+                    const newItem = { id: Date.now().toString(), ...payload, qEng: payload.q_eng, qFre: payload.q_fre, lockOptions: payload.lock_options };
+                    questions.push(newItem);
+                }
+                localStorage.setItem('examforge_local_questions', JSON.stringify(questions));
+                showToast('Question saved locally!', 'success');
+                resetForm();
+                updateUI();
+                return;
+            }
+
+            if (editId) {
+                const { error } = await supabaseClient
+                    .from('questions')
+                    .update(payload)
+                    .eq('id', editId);
+
+                if (error) {
+                    showToast('Update failed: ' + error.message, 'error');
+                } else {
+                    showToast('Question updated in cloud database!', 'success');
+                    resetForm();
+                    fetchCloudQuestions();
+                }
+            } else {
+                const { error } = await supabaseClient
+                    .from('questions')
+                    .insert([payload]);
+
+                if (error) {
+                    showToast('Failed to add question: ' + error.message, 'error');
+                } else {
+                    showToast('New question committed to cloud!', 'success');
+                    resetForm();
+                    fetchCloudQuestions();
+                }
+            }
+        }
+
+        async function toggleLockOptions(id, isLocked) {
+            if (!supabaseClient || currentUser?.id === 'local-demo-user') {
+                const item = questions.find(q => String(q.id) === String(id));
+                if (item) {
+                    item.lockOptions = isLocked;
+                    localStorage.setItem('examforge_local_questions', JSON.stringify(questions));
+                    updateUI();
+                }
+                return;
+            }
+
+            const { error } = await supabaseClient
+                .from('questions')
+                .update({ lock_options: isLocked })
+                .eq('id', id);
+
+            if (error) {
+                showToast('Failed to update lock preference.', 'error');
+            } else {
+                fetchCloudQuestions();
+                showToast(isLocked ? 'Options locked in fixed order.' : 'Options will be randomized.', 'info');
+            }
+        }
+
+        function deleteQuestionPrompt(id) {
+            showConfirm('Remove Question', 'Confirm removal of this question from your cloud repository?', async () => {
+                if (!supabaseClient || currentUser?.id === 'local-demo-user') {
+                    questions = questions.filter(q => String(q.id) !== String(id));
+                    localStorage.setItem('examforge_local_questions', JSON.stringify(questions));
+                    updateUI();
+                    showToast('Question removed locally.', 'info');
+                    return;
+                }
+
+                const { error } = await supabaseClient
+                    .from('questions')
+                    .delete()
+                    .eq('id', id);
+
+                if (error) {
+                    showToast('Delete failed: ' + error.message, 'error');
+                } else {
+                    showToast('Question deleted from cloud repository.', 'info');
+                    fetchCloudQuestions();
+                }
+            });
+        }
+
+        function clearDatabasePrompt() {
+            showConfirm('Clear Entire Database', 'Are you sure you want to delete ALL questions for your account? This action cannot be undone.', async () => {
+                if (!supabaseClient || currentUser?.id === 'local-demo-user') {
+                    questions = [];
+                    localStorage.removeItem('examforge_local_questions');
+                    updateUI();
+                    showToast('Database cleared locally.', 'info');
+                    return;
+                }
+
+                const { error } = await supabaseClient
+                    .from('questions')
+                    .delete()
+                    .eq('user_id', currentUser.id);
+
+                if (error) {
+                    showToast('Failed to clear database: ' + error.message, 'error');
+                } else {
+                    showToast('Cloud database cleared successfully.', 'info');
+                    fetchCloudQuestions();
+                }
+            });
+        }
+
+        function renderOptionInputs() {
+            const container = document.getElementById('options-inputs');
+            container.innerHTML = '';
+            optionsKeys.forEach(key => {
+                container.innerHTML += `
+                    <div class="border-t border-slate-800/60 pt-2.5 grid grid-cols-2 gap-2">
+                        <div class="col-span-2 text-[10px] font-bold uppercase text-cyan-400 tracking-wider">Choice Option ${key.toUpperCase()}</div>
+                        <input type="text" id="opt-${key}Eng" required placeholder="English Content" class="bg-slate-950 border border-slate-800 rounded-lg p-2 text-xs text-slate-100 focus:outline-none focus:border-cyan-500 transition-colors">
+                        <input type="text" id="opt-${key}Fre" required placeholder="Texte Français" class="bg-slate-950 border border-slate-800 rounded-lg p-2 text-xs text-slate-100 focus:outline-none focus:border-cyan-500 transition-colors">
+                    </div>
+                `;
+            });
+        }
+
+        function updateUI() {
+            document.getElementById('db-count').innerText = questions.length;
+            
+            for (let i = 1; i <= 5; i++) {
+                const levelSubsetCount = questions.filter(q => parseInt(q.level) === i).length;
+                document.getElementById(`lbl-count-${i}`).innerText = levelSubsetCount;
+            }
+
+            const container = document.getElementById('questions-container');
+            container.innerHTML = '';
+
+            if (questions.length === 0) {
+                container.innerHTML = `<div class="text-center text-slate-500 pt-16 font-medium">Database is empty. Add your questions using the form.</div>`;
+                return;
+            }
+
+            const filterValue = document.getElementById('db-level-filter')?.value || 'all';
+
+            const visibleQuestions = questions.filter(q => {
+                if (filterValue === 'all') return true;
+                return (parseInt(q.level) === parseInt(filterValue));
+            });
+
+            if (visibleQuestions.length === 0) {
+                container.innerHTML = `<div class="text-center text-slate-500 pt-16 font-medium">No items matching Level ${filterValue} found.</div>`;
+                return;
+            }
+
+            visibleQuestions.forEach((q) => {
+                const absoluteIndex = questions.findIndex(item => item.id === q.id);
+                const currentLevel = parseInt(q.level) || 3;
+                const correctChoice = (q.correct || 'a').toUpperCase();
+                let colorClasses = "";
+
+                if (currentLevel === 1) colorClasses = "text-emerald-400 bg-emerald-950/40 border-emerald-900/60";
+                else if (currentLevel === 2) colorClasses = "text-blue-400 bg-blue-950/40 border-blue-900/60";
+                else if (currentLevel === 3) colorClasses = "text-yellow-400 bg-yellow-950/40 border-yellow-900/60";
+                else if (currentLevel === 4) colorClasses = "text-orange-400 bg-orange-950/40 border-orange-900/60";
+                else if (currentLevel === 5) colorClasses = "text-rose-400 bg-rose-950/40 border-rose-900/60";
+
+                container.innerHTML += `
+                    <div class="bg-slate-950 border border-slate-900 rounded-lg p-3.5 flex items-start justify-between gap-4 hover:border-slate-800 transition-colors">
+                        <div class="flex-1">
+                            <div class="flex items-center space-x-2 flex-wrap gap-y-1">
+                                <span class="text-[10px] font-mono font-bold text-cyan-400 bg-cyan-950/40 border border-cyan-900/60 px-1.5 py-0.5 rounded">#${absoluteIndex + 1}</span>
+                                <span class="text-[9px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wide border ${colorClasses}">Level ${currentLevel}</span>
+                                <span class="text-[9px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wide bg-purple-950/50 border border-purple-800/80 text-purple-300">🔑 Key: Option ${correctChoice}</span>
+                                <label class="inline-flex items-center cursor-pointer text-[9px] font-bold px-2 py-0.5 rounded uppercase tracking-wide border ${q.lockOptions ? 'bg-amber-950/40 border-amber-800/80 text-amber-300' : 'bg-slate-900 border-slate-800 text-slate-400'} gap-1.5 hover:border-slate-700 transition-colors">
+                                    <input type="checkbox" onchange="toggleLockOptions('${q.id}', this.checked)" ${q.lockOptions ? 'checked' : ''} class="w-3 h-3 text-cyan-500 rounded bg-slate-950 border-slate-700 accent-cyan-500">
+                                    <span>${q.lockOptions ? '🔒 Fixed Choices' : '🔀 Shuffled Choices'}</span>
+                                </label>
+                            </div>
+                            <p class="text-slate-200 mt-2 font-medium leading-relaxed">${escapeHtml(q.qEng)}</p>
+                            <p class="text-slate-400 italic mt-1">${escapeHtml(q.qFre)}</p>
+                        </div>
+                        <div class="flex items-center space-x-3 ml-2 pt-0.5 flex-shrink-0">
+                            <button onclick="startEdit('${q.id}')" class="text-slate-400 hover:text-cyan-400 font-bold uppercase text-[10px] tracking-wider transition-colors">Edit</button>
+                            <button onclick="deleteQuestionPrompt('${q.id}')" class="text-slate-500 hover:text-rose-400 font-bold uppercase text-[10px] tracking-wider transition-colors">Delete</button>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        function startEdit(id) {
+            const item = questions.find(q => String(q.id) === String(id));
+            if (!item) return;
+
+            document.getElementById('edit-id').value = item.id;
+            document.getElementById('qLevel').value = item.level || 3;
+            document.getElementById('qCorrect').value = item.correct || "a";
+            document.getElementById('qLockOptions').checked = !!item.lockOptions;
+            document.getElementById('qEng').value = item.qEng;
+            document.getElementById('qFre').value = item.qFre;
+
+            optionsKeys.forEach(k => {
+                document.getElementById(`opt-${k}Eng`).value = item.options[k].eng;
+                document.getElementById(`opt-${k}Fre`).value = item.options[k].fre;
+            });
+
+            document.getElementById('form-title').firstElementChild.innerText = "Modify Existing Question";
+            document.getElementById('btn-submit').innerText = "Save Cloud Updates";
+            document.getElementById('btn-cancel-edit').classList.remove('hidden');
+        }
+
+        function cancelEdit() { resetForm(); }
+
+        function resetForm() {
+            document.getElementById('question-form').reset();
+            document.getElementById('edit-id').value = '';
+            document.getElementById('qLevel').value = "3";
+            document.getElementById('qCorrect').value = "a";
+            document.getElementById('qLockOptions').checked = false;
+            document.getElementById('form-title').firstElementChild.innerText = "Add New Question";
+            document.getElementById('btn-submit').innerText = "Commit to Cloud Database";
+            document.getElementById('btn-cancel-edit').classList.add('hidden');
+        }
+
+        function switchView(target) {
+            if (target === 'manage') {
+                document.getElementById('view-manage').classList.remove('hidden');
+                document.getElementById('view-preview').classList.add('hidden');
+            } else {
+                document.getElementById('view-manage').classList.add('hidden');
+                document.getElementById('view-preview').classList.remove('hidden');
+            }
+        }
+
+        function generateExam() {
+            let compiledSet = [];
+
+            for (let lvl = 1; lvl <= 5; lvl++) {
+                const targetCount = parseInt(document.getElementById(`draw-lvl-${lvl}`).value) || 0;
+                if (targetCount === 0) continue;
+
+                const matchingPool = questions.filter(q => parseInt(q.level) === lvl);
+
+                if (matchingPool.length < targetCount) {
+                    showToast(`Insufficient Level ${lvl} items. Requested ${targetCount}, found ${matchingPool.length}.`, 'error');
+                    return;
+                }
+
+                const sampledSubset = [...matchingPool].sort(() => 0.5 - Math.random()).slice(0, targetCount);
+                compiledSet = compiledSet.concat(sampledSubset);
+            }
+
+            if (compiledSet.length === 0) {
+                showToast("Please declare a target draw count greater than 0 for at least one level.", 'error');
+                return;
+            }
+
+            compiledSet.sort(() => 0.5 - Math.random());
+            
+            const examLabel = document.getElementById('exam-version').value;
+            document.getElementById('print-header').innerText = `Exam Paper - ${examLabel}`;
+            
+            const targetContainer = document.getElementById('print-questions-target');
+            targetContainer.innerHTML = '';
+
+            let trackingAnswersList = [];
+
+            compiledSet.forEach((item, index) => {
+                const initialCorrectKey = item.correct || 'a';
+                const correctTextEnglish = item.options[initialCorrectKey].eng;
+
+                let optionsArray = optionsKeys.map(k => ({ 
+                    key: k,
+                    eng: item.options[k].eng, 
+                    fre: item.options[k].fre 
+                }));
+                
+                if (!item.lockOptions) {
+                    optionsArray.sort(() => 0.5 - Math.random());
+                }
+
+                const targetFinalIndex = optionsArray.findIndex(opt => opt.eng === correctTextEnglish);
+                const finalCorrectLetter = String.fromCharCode(65 + targetFinalIndex);
+
+                trackingAnswersList.push({
+                    num: index + 1,
+                    letter: finalCorrectLetter,
+                    textEng: correctTextEnglish
+                });
+
+                let questionHtml = `
+                    <div class="break-inside-avoid pb-3 border-b border-gray-200 last:border-none">
+                        <div class="font-bold text-xs text-gray-900 leading-snug">
+                            <div>Q${index + 1}. ${escapeHtml(item.qEng)}</div>
+                            <div class="font-medium text-blue-600 mt-0.5 font-sans italic">${escapeHtml(item.qFre)}</div>
+                        </div>
+                        <div class="grid grid-cols-2 gap-x-6 gap-y-2.5 mt-3 ml-2">
+                `;
+
+                optionsArray.forEach((opt, oIdx) => {
+                    const charLetter = String.fromCharCode(65 + oIdx);
+                    questionHtml += `
+                        <div class="flex items-start text-[11px] leading-tight">
+                            <div class="border border-black w-3.5 h-3.5 mr-2 mt-0.5 flex-shrink-0 bg-white"></div>
+                            <div>
+                                <div class="font-bold text-gray-900">${charLetter}. ${escapeHtml(opt.eng)}</div>
+                                <div class="text-blue-600 italic font-medium">${escapeHtml(opt.fre)}</div>
+                            </div>
+                        </div>
+                    `;
+                });
+
+                questionHtml += `</div></div>`;
+                targetContainer.innerHTML += questionHtml;
+            });
+
+            renderAnswerKeyPage(trackingAnswersList);
+            switchView('preview');
+        }
+
+        function renderAnswerKeyPage(answers) {
+            const keyContainer = document.getElementById('print-key-target');
+            keyContainer.innerHTML = '';
+
+            const examLabel = document.getElementById('exam-version').value;
+
+            let html = `
+                <table style="width: 100%; border-collapse: collapse; border: none;">
+                    <thead style="display: table-header-group;">
+                        <tr>
+                            <td style="border: none; padding: 0;">
+                                <div class="border-[3px] border-emerald-600 p-4 mb-4 bg-emerald-50/10" style="margin-bottom: 20px;">
+                                    <div class="text-center font-bold text-lg uppercase tracking-wider text-emerald-700 border-b-2 border-emerald-600 pb-2 mb-2">
+                                        CORRECTION KEY
+                                    </div>
+                                    <div class="text-center font-bold text-xs uppercase text-gray-700 tracking-wide">
+                                        ${escapeHtml(examLabel)}
+                                    </div>
+                                </div>
+                                <p class="text-xs text-gray-600 mb-4 font-medium italic" style="margin-bottom: 16px;">
+                                    This answer key matches the randomized questions for this specific exam version. Please check the version before grading.
+                                </p>
+                            </td>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td style="border: none; padding: 0;">
+                                <div style="display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 12px; width: 100%;">
+            `;
+
+            answers.forEach(ans => {
+                html += `
+                    <div style="display: flex; align-items: center; justify-between; border: 1px solid #cbd5e1; padding: 6px 10px; font-size: 11px; border-radius: 4px; background-color: #fff; page-break-inside: avoid; break-inside: avoid;">
+                        <span style="font-family: monospace; font-weight: bold; color: #475569;">Q${ans.num}</span>
+                        <span style="font-weight: 800; background-color: #d1fae5; color: #065f46; padding: 2px 8px; border-radius: 3px; border: 1px solid #a7f3d0; font-size: 12px;">${ans.letter}</span>
+                    </div>
+                `;
+            });
+
+            html += `
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            `;
+
+            keyContainer.innerHTML = html;
+        }
+
+        function showToast(message, type = 'info') {
+            const toast = document.getElementById('toast');
+            const msgEl = document.getElementById('toast-message');
+            const iconEl = document.getElementById('toast-icon');
+            
+            msgEl.innerText = message;
+            if (type === 'error') iconEl.innerText = '⚠️';
+            else if (type === 'success') iconEl.innerText = '✅';
+            else iconEl.innerText = 'ℹ️';
+
+            toast.classList.remove('translate-y-20', 'opacity-0');
+            toast.classList.add('translate-y-0', 'opacity-100');
+
+            setTimeout(() => {
+                toast.classList.remove('translate-y-0', 'opacity-100');
+                toast.classList.add('translate-y-20', 'opacity-0');
+            }, 3000);
+        }
+
+        function showConfirm(title, message, onConfirm) {
+            const modal = document.getElementById('confirm-modal');
+            document.getElementById('confirm-title').innerText = title;
+            document.getElementById('confirm-message').innerText = message;
+            modal.classList.remove('hidden');
+
+            const cancelBtn = document.getElementById('confirm-cancel-btn');
+            const okBtn = document.getElementById('confirm-ok-btn');
+
+            const close = () => {
+                modal.classList.add('hidden');
+                cancelBtn.onclick = null;
+                okBtn.onclick = null;
+            };
+
+            cancelBtn.onclick = close;
+            okBtn.onclick = () => {
+                close();
+                onConfirm();
+            };
+        }
+
+        function exportBackup() {
+            if (questions.length === 0) { 
+                showToast("Nothing to export.", 'error'); 
+                return; 
+            }
+            const payload = JSON.stringify(questions, null, 2);
+            const blob = new Blob([payload], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const anchor = document.createElement('a');
+            anchor.href = url;
+            anchor.download = 'examforge_backup_data.json';
+            anchor.click();
+            URL.revokeObjectURL(url);
+            showToast('Database exported successfully!', 'success');
+        }
+
+        function importBackup(e) {
+            const targetFile = e.target.files[0];
+            if (!targetFile) return;
+            const reader = new FileReader();
+            reader.onload = async function(evt) {
+                try {
+                    const parsedData = JSON.parse(evt.target.result);
+                    if (Array.isArray(parsedData) && parsedData.length > 0) {
+                        showToast('Importing questions...', 'info');
+
+                        // Save to Supabase if connected
+                        if (supabaseClient && currentUser && currentUser.id !== 'local-demo-user') {
+                            const payloads = parsedData.map(newQ => ({
+                                user_id: currentUser.id,
+                                level: parseInt(newQ.level) || 3,
+                                correct: newQ.correct || "a",
+                                lock_options: newQ.lockOptions !== undefined ? !!newQ.lockOptions : !!newQ.lock_options,
+                                q_eng: newQ.qEng || newQ.q_eng || '',
+                                q_fre: newQ.qFre || newQ.q_fre || '',
+                                options: newQ.options || {}
+                            }));
+
+                            // Perform high-speed bulk/batch insert into Supabase table
+                            const { error } = await supabaseClient.from('questions').insert(payloads);
+                            
+                            if (error) {
+                                showToast('Batch import failed: ' + error.message, 'error');
+                                return;
+                            }
+                            
+                            fetchCloudQuestions();
+                            showToast(`Successfully uploaded ${payloads.length} questions to Supabase!`, 'success');
+                        } else {
+                            // Local offline fallback
+                            parsedData.forEach(newQ => {
+                                questions.push({
+                                    id: newQ.id || Date.now().toString() + Math.random(),
+                                    level: parseInt(newQ.level) || 3,
+                                    correct: newQ.correct || "a",
+                                    lockOptions: newQ.lockOptions !== undefined ? !!newQ.lockOptions : !!newQ.lock_options,
+                                    qEng: newQ.qEng || newQ.q_eng || '',
+                                    qFre: newQ.qFre || newQ.q_fre || '',
+                                    options: newQ.options || {}
+                                });
+                            });
+                            localStorage.setItem('examforge_local_questions', JSON.stringify(questions));
+                            updateUI();
+                            showToast(`Imported ${parsedData.length} items locally!`, 'success');
+                        }
+                    } else { 
+                        showToast("Malformed or empty JSON data payload.", 'error'); 
+                    }
+                } catch(err) { 
+                    showToast("Failed to interpret imported JSON file: " + err.message, 'error'); 
+                }
+            };
+            reader.readAsText(targetFile);
+            e.target.value = '';
+        }
+
+        function escapeHtml(text) {
+            if(!text) return '';
+            return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+        }
+    </script>
+</body>
+</html>
