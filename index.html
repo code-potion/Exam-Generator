@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ExamForge Engine V12.0 (Supabase & Images)</title>
+    <title>ExamForge Engine V15.0 (Supabase & Images)</title>
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23FBBF24'%3E%3Cpath d='M13 2L3 14h9l-1 8 10-12h-9l1-8z'/%3E%3C/svg%3E">
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -62,7 +62,7 @@
         <div class="w-full mx-auto flex flex-col md:flex-row justify-between items-center px-6 gap-4">
             <div class="flex items-center space-x-3">
                 <div class="h-2.5 w-2.5 bg-cyan-500 rounded-full shadow-[0_0_8px_#06b6d4]"></div>
-                <h1 class="text-sm font-bold tracking-widest text-slate-200 uppercase">ExamForge v12.0</h1>
+                <h1 class="text-sm font-bold tracking-widest text-slate-200 uppercase">ExamForge v15.0</h1>
                 <span id="user-badge" class="hidden text-[10px] bg-cyan-950/80 text-cyan-400 border border-cyan-800 px-2 py-0.5 rounded-full font-mono"></span>
             </div>
             
@@ -82,7 +82,7 @@
                 <button id="btn-gen" onclick="generateExam()" class="bg-cyan-600 hover:bg-cyan-500 text-white px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-all shadow-md shadow-cyan-900/20">
                     ⚡ Generate Exam Sheet
                 </button>
-                <button onclick="handleSignOut()" class="bg-slate-800 hover:bg-slate-700 text-slate-400 px-3 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-all border border-slate-700">
+                <button onclick="handleSignOut()" class="bg-red-950 hover:bg-red-900 text-red-200 px-3 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-all border border-red-800/80 shadow-sm">
                     Logout
                 </button>
             </div>
@@ -242,9 +242,9 @@
                         </div>
                         <div class="flex space-x-3">
                             <button onclick="clearDatabasePrompt()" class="text-[11px] text-rose-400 hover:text-rose-300 font-medium">🗑️ Clear All</button>
-                            <button onclick="exportBackup()" class="text-[11px] text-slate-400 hover:text-cyan-400 font-medium">📥 Export JSON</button>
+                            <button onclick="exportBackup()" class="text-[11px] text-slate-400 hover:text-cyan-400 font-medium">🔼 Export JSON</button>
                             <label class="text-[11px] text-slate-400 hover:text-cyan-400 font-medium cursor-pointer">
-                                📤 Import JSON <input type="file" id="import-file" onchange="importBackup(event)" class="hidden">
+                                🔽 Import JSON <input type="file" id="import-file" onchange="importBackup(event)" class="hidden">
                             </label>
                         </div>
                     </div>
