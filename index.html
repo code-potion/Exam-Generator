@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ExamForge Engine V15.0 (Supabase & Images)</title>
+    <title>ExamForge Engine V16.0 (Supabase, Choice Images & Pinned Qs)</title>
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23FBBF24'%3E%3Cpath d='M13 2L3 14h9l-1 8 10-12h-9l1-8z'/%3E%3C/svg%3E">
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -62,7 +62,7 @@
         <div class="w-full mx-auto flex flex-col md:flex-row justify-between items-center px-6 gap-4">
             <div class="flex items-center space-x-3">
                 <div class="h-2.5 w-2.5 bg-cyan-500 rounded-full shadow-[0_0_8px_#06b6d4]"></div>
-                <h1 class="text-sm font-bold tracking-widest text-slate-200 uppercase">ExamForge v15.0</h1>
+                <h1 class="text-sm font-bold tracking-widest text-slate-200 uppercase">ExamForge v16.0</h1>
                 <span id="user-badge" class="hidden text-[10px] bg-cyan-950/80 text-cyan-400 border border-cyan-800 px-2 py-0.5 rounded-full font-mono"></span>
             </div>
             
@@ -96,7 +96,7 @@
         <div id="view-manage" class="grid grid-cols-1 lg:grid-cols-12 gap-6 no-print flex-1 items-start">
             
             <!-- Question Form Column -->
-            <div class="lg:col-span-5 bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-xl h-fit sticky top-24">
+            <div class="lg:col-span-5 bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-xl h-fit sticky top-24 max-h-[85vh] overflow-y-auto">
                 <h2 id="form-title" class="text-xs font-bold uppercase tracking-wider text-slate-300 border-b border-slate-800 pb-3 mb-4 flex justify-between items-center">
                     <span>Add New Question</span>
                     <button id="btn-cancel-edit" onclick="cancelEdit()" class="hidden text-rose-400 hover:underline lowercase font-normal">cancel edit</button>
@@ -127,9 +127,16 @@
                         </div>
                     </div>
 
-                    <div class="flex items-center space-x-2.5 bg-slate-950/60 p-2.5 rounded-lg border border-slate-800/80">
-                        <input type="checkbox" id="qLockOptions" class="w-4 h-4 rounded border-slate-700 bg-slate-950 text-cyan-500 focus:ring-cyan-500 accent-cyan-500 cursor-pointer">
-                        <label for="qLockOptions" class="text-xs text-slate-300 font-medium cursor-pointer select-none">🔒 Lock Option Order (Do not randomize options A-D)</label>
+                    <!-- Question Preference Toggles (Lock Options & Pin Question) -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-2 bg-slate-950/60 p-2.5 rounded-lg border border-slate-800/80">
+                        <div class="flex items-center space-x-2">
+                            <input type="checkbox" id="qLockOptions" class="w-4 h-4 rounded border-slate-700 bg-slate-950 text-cyan-500 focus:ring-cyan-500 accent-cyan-500 cursor-pointer">
+                            <label for="qLockOptions" class="text-[11px] text-slate-300 font-medium cursor-pointer select-none">🔒 Lock Option Order</label>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <input type="checkbox" id="qPinned" class="w-4 h-4 rounded border-slate-700 bg-slate-950 text-amber-500 focus:ring-amber-500 accent-amber-500 cursor-pointer">
+                            <label for="qPinned" class="text-[11px] text-amber-300 font-medium cursor-pointer select-none">📌 Must Include in Exam</label>
+                        </div>
                     </div>
 
                     <div>
@@ -141,50 +148,47 @@
                         <textarea id="qFre" required class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-slate-100 focus:outline-none focus:border-cyan-500 h-16 resize-none transition-colors" placeholder="Tapez la question en Français ici..."></textarea>
                     </div>
 
-                    <!-- Dual Image Upload Section -->
+                    <!-- Question Main Image Upload -->
                     <div class="space-y-2 border border-slate-800 bg-slate-950/60 p-3 rounded-lg">
                         <label class="block text-[10px] font-bold uppercase tracking-widest text-slate-400">
-                            Image / Diagram (Optional)
+                            Question Image / Diagram (Optional)
                         </label>
                         
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
-                            <!-- Local File Input -->
                             <div>
-                                <label class="block text-[9px] text-slate-500 uppercase mb-1">Upload from Computer</label>
+                                <label class="block text-[9px] text-slate-500 uppercase mb-1">Upload File</label>
                                 <input 
                                     type="file" 
                                     id="qImageFile" 
                                     accept="image/*" 
-                                    onchange="handleImageFileUpload(event)"
+                                    onchange="handleImageFileUpload(event, 'main')"
                                     class="block w-full text-[10px] text-slate-400 file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:text-[10px] file:font-semibold file:bg-slate-800 file:text-cyan-400 hover:file:bg-slate-700 cursor-pointer border border-slate-800 rounded-lg bg-slate-950 p-1"
                                 />
                             </div>
-
-                            <!-- Image URL Input -->
                             <div>
-                                <label class="block text-[9px] text-slate-500 uppercase mb-1">Or Direct Web Image URL</label>
+                                <label class="block text-[9px] text-slate-500 uppercase mb-1">Or Image URL</label>
                                 <input 
                                     type="url" 
                                     id="qImageUrl" 
-                                    oninput="updateFormImagePreview(this.value)"
+                                    oninput="updateFormImagePreview(this.value, 'main')"
                                     placeholder="https://example.com/diagram.png" 
                                     class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-xs text-slate-100 focus:outline-none focus:border-cyan-500 transition-colors"
                                 >
                             </div>
                         </div>
 
-                        <!-- Status & Thumbnail Preview -->
-                        <div id="uploadStatusText" class="text-[10px] text-cyan-400 font-medium hidden">Uploading image to cloud...</div>
+                        <div id="uploadStatusText-main" class="text-[10px] text-cyan-400 font-medium hidden">Uploading image to cloud...</div>
 
-                        <div id="form-image-preview-container" class="hidden items-center justify-between bg-slate-900 border border-slate-800 rounded p-2 mt-2">
-                            <img id="form-image-preview" src="" alt="Selected Preview" class="max-h-20 max-w-[150px] object-contain rounded border border-slate-800">
-                            <button type="button" onclick="clearFormImage()" class="text-rose-400 hover:text-rose-300 text-[10px] font-bold uppercase px-2 py-1 rounded bg-rose-950/40 border border-rose-900/60">
+                        <div id="form-image-preview-container-main" class="hidden items-center justify-between bg-slate-900 border border-slate-800 rounded p-2 mt-2">
+                            <img id="form-image-preview-main" src="" alt="Question Diagram" class="max-h-20 max-w-[150px] object-contain rounded border border-slate-800">
+                            <button type="button" onclick="clearFormImage('main')" class="text-rose-400 hover:text-rose-300 text-[10px] font-bold uppercase px-2 py-1 rounded bg-rose-950/40 border border-rose-900/60">
                                 🗑️ Remove Image
                             </button>
                         </div>
                     </div>
 
-                    <div id="options-inputs" class="space-y-3"></div>
+                    <!-- Choices A, B, C, D Inputs with Choice Images -->
+                    <div id="options-inputs" class="space-y-4"></div>
 
                     <button type="submit" id="btn-submit" class="w-full bg-cyan-600 hover:bg-cyan-500 text-white font-bold py-2.5 px-4 rounded-lg text-xs uppercase tracking-wider border border-cyan-500 shadow-md transition-all">
                         Commit to Cloud Database
@@ -242,9 +246,9 @@
                         </div>
                         <div class="flex space-x-3">
                             <button onclick="clearDatabasePrompt()" class="text-[11px] text-rose-400 hover:text-rose-300 font-medium">🗑️ Clear All</button>
-                            <button onclick="exportBackup()" class="text-[11px] text-slate-400 hover:text-cyan-400 font-medium">🔼 Export JSON</button>
+                            <button onclick="exportBackup()" class="text-[11px] text-slate-400 hover:text-cyan-400 font-medium">📥 Export JSON</button>
                             <label class="text-[11px] text-slate-400 hover:text-cyan-400 font-medium cursor-pointer">
-                                🔽 Import JSON <input type="file" id="import-file" onchange="importBackup(event)" class="hidden">
+                                📤 Import JSON <input type="file" id="import-file" onchange="importBackup(event)" class="hidden">
                             </label>
                         </div>
                     </div>
@@ -432,17 +436,18 @@
                 level: q.level,
                 correct: q.correct,
                 lockOptions: q.lock_options,
+                pinned: !!q.pinned,
                 imageUrl: q.image_url || '',
                 qEng: q.q_eng,
                 qFre: q.q_fre,
-                options: q.options
+                options: q.options || {}
             }));
 
             updateUI();
         }
 
-        // Handle Direct Computer File Uploads to Supabase Storage
-        async function handleImageFileUpload(event) {
+        // Image File Upload Handler (Supports both main question diagram and individual choice option images)
+        async function handleImageFileUpload(event, targetType) {
             const file = event.target.files[0];
             if (!file) return;
 
@@ -451,9 +456,11 @@
                 return;
             }
 
-            const statusText = document.getElementById('uploadStatusText');
-            statusText.textContent = 'Uploading image to Supabase Storage...';
-            statusText.classList.remove('hidden');
+            const statusText = document.getElementById(`uploadStatusText-${targetType}`);
+            if (statusText) {
+                statusText.textContent = 'Uploading image to Supabase Storage...';
+                statusText.classList.remove('hidden');
+            }
 
             try {
                 const fileExt = file.name.split('.').pop();
@@ -470,21 +477,31 @@
                     .getPublicUrl(fileName);
 
                 const finalUrl = publicUrlData.publicUrl;
-                document.getElementById('qImageUrl').value = finalUrl;
-                updateFormImagePreview(finalUrl);
 
-                statusText.textContent = '✓ Image uploaded successfully!';
-                setTimeout(() => statusText.classList.add('hidden'), 3000);
+                if (targetType === 'main') {
+                    document.getElementById('qImageUrl').value = finalUrl;
+                    updateFormImagePreview(finalUrl, 'main');
+                } else {
+                    document.getElementById(`opt-${targetType}ImageUrl`).value = finalUrl;
+                    updateFormImagePreview(finalUrl, targetType);
+                }
+
+                if (statusText) {
+                    statusText.textContent = '✓ Uploaded!';
+                    setTimeout(() => statusText.classList.add('hidden'), 2500);
+                }
             } catch (err) {
                 console.error('Storage Upload Error:', err);
                 showToast('Image upload failed: ' + (err.message || 'Error uploading file'), 'error');
-                statusText.classList.add('hidden');
+                if (statusText) statusText.classList.add('hidden');
             }
         }
 
-        function updateFormImagePreview(url) {
-            const previewContainer = document.getElementById('form-image-preview-container');
-            const previewImg = document.getElementById('form-image-preview');
+        function updateFormImagePreview(url, targetType) {
+            const previewContainer = document.getElementById(`form-image-preview-container-${targetType}`);
+            const previewImg = document.getElementById(`form-image-preview-${targetType}`);
+
+            if (!previewContainer || !previewImg) return;
 
             if (url && url.trim().length > 0) {
                 previewImg.src = url.trim();
@@ -496,10 +513,16 @@
             }
         }
 
-        function clearFormImage() {
-            document.getElementById('qImageUrl').value = '';
-            document.getElementById('qImageFile').value = '';
-            updateFormImagePreview('');
+        function clearFormImage(targetType) {
+            if (targetType === 'main') {
+                document.getElementById('qImageUrl').value = '';
+                document.getElementById('qImageFile').value = '';
+                updateFormImagePreview('', 'main');
+            } else {
+                document.getElementById(`opt-${targetType}ImageUrl`).value = '';
+                document.getElementById(`opt-${targetType}ImageFile`).value = '';
+                updateFormImagePreview('', targetType);
+            }
         }
 
         async function handleFormSubmit(e) {
@@ -516,6 +539,7 @@
                 level: parseInt(document.getElementById('qLevel').value) || 3,
                 correct: document.getElementById('qCorrect').value || "a",
                 lock_options: document.getElementById('qLockOptions').checked,
+                pinned: document.getElementById('qPinned').checked,
                 image_url: document.getElementById('qImageUrl').value.trim() || null,
                 q_eng: document.getElementById('qEng').value,
                 q_fre: document.getElementById('qFre').value,
@@ -523,9 +547,11 @@
             };
 
             optionsKeys.forEach(k => {
+                const choiceImgUrl = document.getElementById(`opt-${k}ImageUrl`)?.value.trim() || '';
                 payload.options[k] = {
                     eng: document.getElementById(`opt-${k}Eng`).value,
-                    fre: document.getElementById(`opt-${k}Fre`).value
+                    fre: document.getElementById(`opt-${k}Fre`).value,
+                    imageUrl: choiceImgUrl
                 };
             });
 
@@ -573,6 +599,22 @@
             }
         }
 
+        async function togglePinnedQuestion(id, isPinned) {
+            if (!supabaseClient || !currentUser) return;
+
+            const { error } = await supabaseClient
+                .from('questions')
+                .update({ pinned: isPinned })
+                .eq('id', id);
+
+            if (error) {
+                showToast('Failed to update pinned preference.', 'error');
+            } else {
+                fetchCloudQuestions();
+                showToast(isPinned ? '📌 Question pinned to exam sheets!' : 'Question returned to random pool.', 'info');
+            }
+        }
+
         function deleteQuestionPrompt(id) {
             showConfirm('Remove Question', 'Confirm removal of this question from your cloud repository?', async () => {
                 if (!supabaseClient || !currentUser) return;
@@ -614,10 +656,47 @@
             container.innerHTML = '';
             optionsKeys.forEach(key => {
                 container.innerHTML += `
-                    <div class="border-t border-slate-800/60 pt-2.5 grid grid-cols-2 gap-2">
-                        <div class="col-span-2 text-[10px] font-bold uppercase text-cyan-400 tracking-wider">Choice Option ${key.toUpperCase()}</div>
-                        <input type="text" id="opt-${key}Eng" required placeholder="English Content" class="bg-slate-950 border border-slate-800 rounded-lg p-2 text-xs text-slate-100 focus:outline-none focus:border-cyan-500 transition-colors">
-                        <input type="text" id="opt-${key}Fre" required placeholder="Texte Français" class="bg-slate-950 border border-slate-800 rounded-lg p-2 text-xs text-slate-100 focus:outline-none focus:border-cyan-500 transition-colors">
+                    <div class="border-t border-slate-800/80 pt-3 space-y-2">
+                        <div class="text-[10px] font-bold uppercase text-cyan-400 tracking-wider">Choice Option ${key.toUpperCase()}</div>
+                        
+                        <div class="grid grid-cols-2 gap-2">
+                            <input type="text" id="opt-${key}Eng" required placeholder="English Content" class="bg-slate-950 border border-slate-800 rounded-lg p-2 text-xs text-slate-100 focus:outline-none focus:border-cyan-500 transition-colors">
+                            <input type="text" id="opt-${key}Fre" required placeholder="Texte Français" class="bg-slate-950 border border-slate-800 rounded-lg p-2 text-xs text-slate-100 focus:outline-none focus:border-cyan-500 transition-colors">
+                        </div>
+
+                        <!-- Choice Option Image Input -->
+                        <div class="bg-slate-950/40 p-2 rounded border border-slate-800/80 space-y-1.5">
+                            <div class="grid grid-cols-2 gap-2">
+                                <div>
+                                    <label class="block text-[8px] text-slate-500 uppercase">Choice File</label>
+                                    <input 
+                                        type="file" 
+                                        id="opt-${key}ImageFile" 
+                                        accept="image/*" 
+                                        onchange="handleImageFileUpload(event, '${key}')"
+                                        class="block w-full text-[9px] text-slate-400 file:mr-1 file:py-0.5 file:px-1.5 file:rounded file:border-0 file:text-[9px] file:bg-slate-800 file:text-cyan-400 cursor-pointer border border-slate-800 rounded bg-slate-950"
+                                    />
+                                </div>
+                                <div>
+                                    <label class="block text-[8px] text-slate-500 uppercase">Choice Image URL</label>
+                                    <input 
+                                        type="url" 
+                                        id="opt-${key}ImageUrl" 
+                                        oninput="updateFormImagePreview(this.value, '${key}')"
+                                        placeholder="https://..." 
+                                        class="w-full bg-slate-950 border border-slate-800 rounded p-1 text-[11px] text-slate-100 focus:outline-none focus:border-cyan-500"
+                                    >
+                                </div>
+                            </div>
+                            <div id="uploadStatusText-${key}" class="text-[9px] text-cyan-400 font-medium hidden">Uploading choice image...</div>
+
+                            <div id="form-image-preview-container-${key}" class="hidden items-center justify-between bg-slate-900 border border-slate-800 rounded p-1">
+                                <img id="form-image-preview-${key}" src="" alt="Choice Preview" class="max-h-12 max-w-[100px] object-contain rounded">
+                                <button type="button" onclick="clearFormImage('${key}')" class="text-rose-400 hover:text-rose-300 text-[9px] font-bold uppercase px-1.5 py-0.5 rounded bg-rose-950/40 border border-rose-900/60">
+                                    Clear Image
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 `;
             });
@@ -663,9 +742,28 @@
                 else if (currentLevel === 4) colorClasses = "text-orange-400 bg-orange-950/40 border-orange-900/60";
                 else if (currentLevel === 5) colorClasses = "text-rose-400 bg-rose-950/40 border-rose-900/60";
 
-                let imagePreviewHtml = q.imageUrl 
+                let mainImageHtml = q.imageUrl 
                     ? `<div class="mt-2"><img src="${escapeHtml(q.imageUrl)}" alt="Question Image" class="max-h-32 rounded border border-slate-800 object-contain bg-slate-900 p-1"></div>`
                     : '';
+
+                // Build thumbnail previews for choices that contain images
+                let choicesImageHtml = '';
+                if (q.options) {
+                    optionsKeys.forEach(k => {
+                        if (q.options[k] && q.options[k].imageUrl) {
+                            choicesImageHtml += `
+                                <div class="inline-flex items-center gap-1 border border-slate-800 bg-slate-900 p-1 rounded">
+                                    <span class="text-[9px] font-bold text-cyan-400 uppercase">${k}:</span>
+                                    <img src="${escapeHtml(q.options[k].imageUrl)}" class="h-8 max-w-[60px] object-contain rounded">
+                                </div>
+                            `;
+                        }
+                    });
+                }
+
+                if (choicesImageHtml) {
+                    choicesImageHtml = `<div class="mt-2 flex flex-wrap gap-2 items-center">${choicesImageHtml}</div>`;
+                }
 
                 container.innerHTML += `
                     <div class="bg-slate-950 border border-slate-900 rounded-lg p-3.5 flex items-start justify-between gap-4 hover:border-slate-800 transition-colors">
@@ -674,14 +772,21 @@
                                 <span class="text-[10px] font-mono font-bold text-cyan-400 bg-cyan-950/40 border border-cyan-900/60 px-1.5 py-0.5 rounded">#${absoluteIndex + 1}</span>
                                 <span class="text-[9px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wide border ${colorClasses}">Level ${currentLevel}</span>
                                 <span class="text-[9px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wide bg-purple-950/50 border border-purple-800/80 text-purple-300">🔑 Key: Option ${correctChoice}</span>
-                                <label class="inline-flex items-center cursor-pointer text-[9px] font-bold px-2 py-0.5 rounded uppercase tracking-wide border ${q.lockOptions ? 'bg-amber-950/40 border-amber-800/80 text-amber-300' : 'bg-slate-900 border-slate-800 text-slate-400'} gap-1.5 hover:border-slate-700 transition-colors">
+                                
+                                <label class="inline-flex items-center cursor-pointer text-[9px] font-bold px-2 py-0.5 rounded uppercase tracking-wide border ${q.lockOptions ? 'bg-amber-950/40 border-amber-800/80 text-amber-300' : 'bg-slate-900 border-slate-800 text-slate-400'} gap-1 hover:border-slate-700 transition-colors">
                                     <input type="checkbox" onchange="toggleLockOptions('${q.id}', this.checked)" ${q.lockOptions ? 'checked' : ''} class="w-3 h-3 text-cyan-500 rounded bg-slate-950 border-slate-700 accent-cyan-500">
-                                    <span>${q.lockOptions ? '🔒 Fixed Choices' : '🔀 Shuffled Choices'}</span>
+                                    <span>${q.lockOptions ? '🔒 Fixed Order' : '🔀 Shuffled'}</span>
+                                </label>
+
+                                <label class="inline-flex items-center cursor-pointer text-[9px] font-bold px-2 py-0.5 rounded uppercase tracking-wide border ${q.pinned ? 'bg-amber-500/20 border-amber-500/80 text-amber-300' : 'bg-slate-900 border-slate-800 text-slate-400'} gap-1 hover:border-slate-700 transition-colors">
+                                    <input type="checkbox" onchange="togglePinnedQuestion('${q.id}', this.checked)" ${q.pinned ? 'checked' : ''} class="w-3 h-3 text-amber-500 rounded bg-slate-950 border-slate-700 accent-amber-500">
+                                    <span>${q.pinned ? '📌 Must Include' : '📌 Pin Exam'}</span>
                                 </label>
                             </div>
                             <p class="text-slate-200 mt-2 font-medium leading-relaxed">${escapeHtml(q.qEng)}</p>
                             <p class="text-slate-400 italic mt-1">${escapeHtml(q.qFre)}</p>
-                            ${imagePreviewHtml}
+                            ${mainImageHtml}
+                            ${choicesImageHtml}
                         </div>
                         <div class="flex items-center space-x-3 ml-2 pt-0.5 flex-shrink-0">
                             <button onclick="startEdit('${q.id}')" class="text-slate-400 hover:text-cyan-400 font-bold uppercase text-[10px] tracking-wider transition-colors">Edit</button>
@@ -700,17 +805,24 @@
             document.getElementById('qLevel').value = item.level || 3;
             document.getElementById('qCorrect').value = item.correct || "a";
             document.getElementById('qLockOptions').checked = !!item.lockOptions;
+            document.getElementById('qPinned').checked = !!item.pinned;
             
             document.getElementById('qImageUrl').value = item.imageUrl || '';
             document.getElementById('qImageFile').value = '';
-            updateFormImagePreview(item.imageUrl || '');
+            updateFormImagePreview(item.imageUrl || '', 'main');
 
             document.getElementById('qEng').value = item.qEng;
             document.getElementById('qFre').value = item.qFre;
 
             optionsKeys.forEach(k => {
-                document.getElementById(`opt-${k}Eng`).value = item.options[k].eng;
-                document.getElementById(`opt-${k}Fre`).value = item.options[k].fre;
+                const optData = item.options && item.options[k] ? item.options[k] : { eng: '', fre: '', imageUrl: '' };
+                document.getElementById(`opt-${k}Eng`).value = optData.eng || '';
+                document.getElementById(`opt-${k}Fre`).value = optData.fre || '';
+                
+                const choiceUrl = optData.imageUrl || '';
+                document.getElementById(`opt-${k}ImageUrl`).value = choiceUrl;
+                document.getElementById(`opt-${k}ImageFile`).value = '';
+                updateFormImagePreview(choiceUrl, k);
             });
 
             document.getElementById('form-title').firstElementChild.innerText = "Modify Existing Question";
@@ -726,8 +838,10 @@
             document.getElementById('qLevel').value = "3";
             document.getElementById('qCorrect').value = "a";
             document.getElementById('qLockOptions').checked = false;
+            document.getElementById('qPinned').checked = false;
             
-            clearFormImage();
+            clearFormImage('main');
+            optionsKeys.forEach(k => clearFormImage(k));
 
             document.getElementById('form-title').firstElementChild.innerText = "Add New Question";
             document.getElementById('btn-submit').innerText = "Commit to Cloud Database";
@@ -744,6 +858,7 @@
             }
         }
 
+        // Exam Generation Engine with Pinned Guarantee Logic
         function generateExam() {
             let compiledSet = [];
 
@@ -758,8 +873,24 @@
                     return;
                 }
 
-                const sampledSubset = [...matchingPool].sort(() => 0.5 - Math.random()).slice(0, targetCount);
-                compiledSet = compiledSet.concat(sampledSubset);
+                // Split pool into pinned and unpinned
+                const pinnedList = matchingPool.filter(q => q.pinned);
+                const unpinnedList = matchingPool.filter(q => !q.pinned);
+
+                // Always take pinned questions first
+                let levelSelection = [...pinnedList];
+                const neededCount = targetCount - levelSelection.length;
+
+                if (neededCount > 0) {
+                    // Fill remaining target slots randomly from unpinned questions
+                    const randomSample = [...unpinnedList].sort(() => 0.5 - Math.random()).slice(0, neededCount);
+                    levelSelection = levelSelection.concat(randomSample);
+                } else if (levelSelection.length > targetCount) {
+                    // If pinned count exceeds the requested count, take the requested amount from pinned
+                    levelSelection = levelSelection.slice(0, targetCount);
+                }
+
+                compiledSet = compiledSet.concat(levelSelection);
             }
 
             if (compiledSet.length === 0) {
@@ -767,6 +898,7 @@
                 return;
             }
 
+            // Shuffle overall question order on exam paper
             compiledSet.sort(() => 0.5 - Math.random());
             
             const examLabel = document.getElementById('exam-version').value;
@@ -784,7 +916,8 @@
                 let optionsArray = optionsKeys.map(k => ({ 
                     key: k,
                     eng: item.options[k].eng, 
-                    fre: item.options[k].fre 
+                    fre: item.options[k].fre,
+                    imageUrl: item.options[k].imageUrl || ''
                 }));
                 
                 if (!item.lockOptions) {
@@ -800,7 +933,7 @@
                     textEng: correctTextEnglish
                 });
 
-                let imageHtml = item.imageUrl 
+                let mainImageHtml = item.imageUrl 
                     ? `<div class="my-2"><img src="${escapeHtml(item.imageUrl)}" alt="Question Diagram" class="max-h-48 max-w-full object-contain border border-gray-300 rounded"></div>`
                     : '';
 
@@ -810,18 +943,23 @@
                             <div>Q${index + 1}. ${escapeHtml(item.qEng)}</div>
                             <div class="font-medium text-blue-600 mt-0.5 font-sans italic">${escapeHtml(item.qFre)}</div>
                         </div>
-                        ${imageHtml}
-                        <div class="grid grid-cols-2 gap-x-6 gap-y-2.5 mt-3 ml-2">
+                        ${mainImageHtml}
+                        <div class="grid grid-cols-2 gap-x-6 gap-y-3 mt-3 ml-2">
                 `;
 
                 optionsArray.forEach((opt, oIdx) => {
                     const charLetter = String.fromCharCode(65 + oIdx);
+                    let optionImageHtml = opt.imageUrl 
+                        ? `<div class="mt-1"><img src="${escapeHtml(opt.imageUrl)}" alt="Choice Diagram" class="max-h-24 max-w-full object-contain border border-gray-300 rounded p-0.5"></div>`
+                        : '';
+
                     questionHtml += `
                         <div class="flex items-start text-[11px] leading-tight">
                             <div class="border border-black w-3.5 h-3.5 mr-2 mt-0.5 flex-shrink-0 bg-white"></div>
-                            <div>
+                            <div class="flex-1">
                                 <div class="font-bold text-gray-900">${charLetter}. ${escapeHtml(opt.eng)}</div>
                                 <div class="text-blue-600 italic font-medium">${escapeHtml(opt.fre)}</div>
+                                ${optionImageHtml}
                             </div>
                         </div>
                     `;
@@ -959,6 +1097,7 @@
                                 level: parseInt(newQ.level) || 3,
                                 correct: newQ.correct || "a",
                                 lock_options: newQ.lockOptions !== undefined ? !!newQ.lockOptions : !!newQ.lock_options,
+                                pinned: newQ.pinned !== undefined ? !!newQ.pinned : false,
                                 image_url: newQ.imageUrl || newQ.image_url || null,
                                 q_eng: newQ.qEng || newQ.q_eng || '',
                                 q_fre: newQ.qFre || newQ.q_fre || '',
