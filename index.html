@@ -1090,20 +1090,26 @@
                     const parsedData = JSON.parse(evt.target.result);
                     if (Array.isArray(parsedData) && parsedData.length > 0) {
                         showToast('Importing questions...', 'info');
-
+        
                         if (supabaseClient && currentUser) {
-                            const payloads = parsedData.map(newQ => ({
-                                user_id: currentUser.id,
-                                level: parseInt(newQ.level) || 3,
-                                correct: newQ.correct || "a",
-                                lock_options: newQ.lockOptions !== undefined ? !!newQ.lockOptions : !!newQ.lock_options,
-                                pinned: newQ.pinned !== undefined ? !!newQ.pinned : false,
-                                image_url: newQ.imageUrl || newQ.image_url || null,
-                                q_eng: newQ.qEng || newQ.q_eng || '',
-                                q_fre: newQ.qFre || newQ.q_fre || '',
-                                options: newQ.options || {}
-                            }));
-
+                            // Map through each question and sanitize/inject required cloud fields
+                            const payloads = parsedData.map(newQ => {
+                                // Strip out old id so Supabase auto-generates a clean UUID/serial, and strip any old user_id
+                                const { id, user_id, ...cleanQ } = newQ;
+        
+                                return {
+                                    user_id: currentUser.id, // Assign to the logged-in user to satisfy RLS
+                                    level: parseInt(cleanQ.level) || 3,
+                                    correct: cleanQ.correct || "a",
+                                    lock_options: cleanQ.lockOptions !== undefined ? !!cleanQ.lockOptions : !!cleanQ.lock_options,
+                                    pinned: cleanQ.pinned !== undefined ? !!cleanQ.pinned : false,
+                                    image_url: cleanQ.imageUrl || cleanQ.image_url || null,
+                                    q_eng: cleanQ.qEng || cleanQ.q_eng || '',
+                                    q_fre: cleanQ.qFre || cleanQ.q_fre || '',
+                                    options: cleanQ.options || {}
+                                };
+                            });
+        
                             const { error } = await supabaseClient.from('questions').insert(payloads);
                             
                             if (error) {
@@ -1112,7 +1118,7 @@
                             }
                             
                             fetchCloudQuestions();
-                            showToast(`Successfully uploaded ${payloads.length} questions to Supabase!`, 'success');
+                            showToast(`Successfully imported ${payloads.length} questions to Supabase!`, 'success');
                         } else {
                             showToast('Must be logged in to import questions.', 'error');
                         }
